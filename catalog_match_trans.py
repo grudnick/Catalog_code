@@ -3,7 +3,7 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord
    
 
-def cat_sky_match(raref, decref, rain, decin):
+def cat_sky_match(raref, decref, rain, decin, septol):
 
     '''Written by Gregory Rudnick 9 January 2018
 
