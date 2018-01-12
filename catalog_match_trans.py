@@ -78,7 +78,7 @@ def cat_sky_match(raref, decref, rain, decin, septol, **kwargs):
 
 
 
-def match_diff_plot(rarefm, decrefm, rainm, decinm):
+def match_diff_plot(rarefm, decrefm, rainm, decinm, **kwargs):
 
     '''PURPOSE: Plot panels of differences in ra and dec for a set of
     matched catalogs.
@@ -98,6 +98,8 @@ def match_diff_plot(rarefm, decrefm, rainm, decinm):
     rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
     rc('text', usetex=True)
 
+    plt.clf()
+    
     radiff = (rarefm - rainm)*3600.
     decdiff = (decrefm - decinm)*3600.
     #f, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, sharex='col', sharey='row')
@@ -141,7 +143,10 @@ def match_diff_plot(rarefm, decrefm, rainm, decinm):
     ax4.set_ylim([-3.,3.])
     ax4.set_xlabel(r'Dec')
 
-    plt.savefig('tex_demo')
+    keys = sorted(kwargs.keys())
+    for kw in keys:
+        if kw == 'plotfile':
+            plt.savefig(kwargs[kw])
     plt.show()
 
 
