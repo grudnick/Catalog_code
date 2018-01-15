@@ -4,6 +4,7 @@ from astropy.coordinates import SkyCoord
 import matplotlib.pyplot as plt
 from matplotlib import rc
 from matplotlib.ticker import FormatStrFormatter
+from pyraf import iraf 
    
 
 def cat_sky_match(raref, decref, rain, decin, septol, **kwargs):
@@ -124,7 +125,7 @@ def match_diff_plot(rarefm, decrefm, rainm, decinm, **kwargs):
     yline1 = [-0.5, -0.5]
     yline2 = [0.5, 0.5]
 
-    #plt.clf()
+    plt.clf()
     f, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2)
     ax1.scatter(rarefm, radiff)
     ax1.plot(ralims, yline, color='r')
@@ -166,7 +167,7 @@ def match_diff_plot(rarefm, decrefm, rainm, decinm, **kwargs):
     for kw in keys:
         if kw == 'plotfile':
             plt.savefig(kwargs[kw])
-    plt.show()
-
-
-
+    #plt.show()
+    #print("done with plot")
+    #plt.close()
+    
