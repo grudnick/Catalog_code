@@ -60,7 +60,7 @@ def cat_sky_match(raref, decref, rain, decin, septol, **kwargs):
     #print(np.column_stack((raref[iclose],rain[idx[iclose]],d2d[iclose]/u.deg*3600.)))
 
 
-    #write files
+    #write files only if "matchfile" keyword is set
     keys = sorted(kwargs.keys())
     for kw in keys:
         if kw == 'matchfile':
