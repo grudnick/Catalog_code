@@ -29,7 +29,7 @@ def cat_sky_match(raref, decref, rain, decin, septol, **kwargs):
     septol: the maximum separation allowed for a match.  Units are
     arcseconds
 
-    OPTIONAL KEWYORD PARAMETERS
+    OPTIONAL KEYWORD PARAMETERS
 
     matchfile: a name of the file that will contain the reference and
     input coordinates.  Suitable for geomap input.
@@ -96,6 +96,11 @@ def match_diff_plot(rarefm, decrefm, rainm, decinm, **kwargs):
 
     plotfile: the name of the file containing the plot
 
+    ramin, ramax, decmin, decmax.  These are the limits over which the
+    transform was originally computed.  If these are given then it
+    uses those limits to color the points in the ra and decdiff plots.
+    If one is given, all must be given.
+
     OUTPUT:
 
     a plot of the differences between the RA and DEC coordinates
@@ -125,9 +130,25 @@ def match_diff_plot(rarefm, decrefm, rainm, decinm, **kwargs):
     yline1 = [-0.5, -0.5]
     yline2 = [0.5, 0.5]
 
+    #finds source outside of ra and dec lims.  Assumes that if one
+    #keyword is given that all are given
+    if 'ramin' in kwargs.keys():
+        iin = np.where((rarefm >= kwargs['ramin']) & (rarefm <= kwargs['ramax']) & \
+                       (decrefm >= kwargs['decmin']) & (decrefm <= kwargs['decmax']))
+        iout = np.where(((rarefm < kwargs['ramin']) | (rarefm > kwargs['ramax'])) | \
+                        ((decrefm < kwargs['decmin']) | (decrefm > kwargs['decmax'])))
+    
     plt.clf()
     f, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2)
-    ax1.scatter(rarefm, radiff)
+
+    #color code the points in and outside the area where transform is
+    #valid, if the ra and dec limits are given.
+    if 'ramin' in kwargs.keys():
+        ax1.scatter(rarefm[iout], radiff[iout], color='y', edgecolors='k')
+        ax1.scatter(rarefm[iin], radiff[iin], color='b', edgecolors='k')
+    else:
+        ax1.scatter(rarefm, radiff, color='b', edgecolors='k')
+        
     ax1.plot(ralims, yline, color='r')
     ax1.plot(ralims, yline1, color='r', linestyle = ':')
     ax1.plot(ralims, yline2, color='r', linestyle = ':')
@@ -135,7 +156,15 @@ def match_diff_plot(rarefm, decrefm, rainm, decinm, **kwargs):
     ax1.set_ylim([-3.,3.])
     ax1.set_ylabel(r'\Delta RA')
 
-    ax2.scatter(decrefm, radiff)
+    #color code the points in and outside the area where transform is
+    #valid, if the ra and dec limits are given.
+    if 'ramin' in kwargs.keys():
+        ax2.scatter(decrefm[iout], radiff[iout], color='y', edgecolors='k')
+        ax2.scatter(decrefm[iin], radiff[iin], color='b', edgecolors='k')
+    else:
+        ax2.scatter(decrefm, radiff, color='b', edgecolors='k')
+
+    #ax2.scatter(decrefm, radiff)
     ax2.plot(declims, yline, color='r')
     ax2.plot(declims, yline1, color='r', linestyle = ':')
     ax2.plot(declims, yline2, color='r', linestyle = ':')
@@ -144,7 +173,15 @@ def match_diff_plot(rarefm, decrefm, rainm, decinm, **kwargs):
     ax2.set_xlim(declims)
     ax2.set_ylim([-3.,3.])
 
-    ax3.scatter(rarefm, decdiff)
+    #color code the points in and outside the area where transform is
+    #valid, if the ra and dec limits are given.
+    if 'ramin' in kwargs.keys():
+        ax3.scatter(rarefm[iout], decdiff[iout], color='y', edgecolors='k')
+        ax3.scatter(rarefm[iin], decdiff[iin], color='b', edgecolors='k')
+    else:
+        ax3.scatter(rarefm, decdiff, color='b', edgecolors='k')
+
+    #ax3.scatter(rarefm, decdiff)
     ax3.plot(ralims, yline, color='r')
     ax3.plot(ralims, yline1, color='r', linestyle = ':')
     ax3.plot(ralims, yline2, color='r', linestyle = ':')
@@ -153,7 +190,15 @@ def match_diff_plot(rarefm, decrefm, rainm, decinm, **kwargs):
     ax3.set_xlabel(r'RA')
     ax3.set_ylabel(r'\Delta Dec')
     
-    ax4.scatter(decrefm, decdiff)
+    #color code the points in and outside the area where transform is
+    #valid, if the ra and dec limits are given.
+    if 'ramin' in kwargs.keys():
+        ax4.scatter(decrefm[iout], decdiff[iout], color='y', edgecolors='k')
+        ax4.scatter(decrefm[iin], decdiff[iin], color='b', edgecolors='k')
+    else:
+        ax4.scatter(decrefm, decdiff, color='b', edgecolors='k')
+
+    #    ax4.scatter(decrefm, decdiff)
     ax4.plot(declims, yline, color='r')
     ax4.plot(declims, yline1, color='r', linestyle = ':')
     ax4.plot(declims, yline2, color='r', linestyle = ':')
