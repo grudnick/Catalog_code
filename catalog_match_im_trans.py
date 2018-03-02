@@ -1,0 +1,226 @@
+import numpy as np
+from astropy import units as u
+from astropy.coordinates import SkyCoord
+import matplotlib.pyplot as plt
+from matplotlib import rc
+from matplotlib.ticker import FormatStrFormatter
+from pyraf import iraf 
+   
+
+def cat_im_match(xref, yref, xin, yin, septol, **kwargs):
+
+    '''Written by Gregory Rudnick 9 January 2018
+
+    PURPOSE:
+
+    Take two lists of x and y coordinates in the same units and match
+    them within some tolerance.
+
+    Plot the differences in each coordinate.
+
+    INPUT PARAMETERS:
+
+    xref, yref: the reference coordinates in pixels.  Numpy arrays.
+
+    xin, yin: the input coordinates in pixels.  If performing
+    coordinate transforms, these would be the ones to be transformed.
+    Numpy arrays
+
+    septol: the maximum separation allowed for a match.  Units are
+    pixels
+
+    OPTIONAL KEYWORD PARAMETERS
+
+    matchfile: a name of the file that will contain the reference and
+    input coordinates.  Suitable for geomap input.
+
+    OUTPUT
+
+    arrays containing row-matched (x,y) coordinates of the reference and input
+    coordinates that fall with septol
+
+    '''
+
+    #I am fooling the SkyCoord code here to think that the coordinates
+    #are in degrees, as that way the matching works
+    refcat = SkyCoord(ra=xref*u.degree, dec=yref*u.degree)
+    incat = SkyCoord(ra=xin*u.degree, dec=yin*u.degree)
+    
+    #match catalogs
+    (idx, d2d, d3d) = refcat.match_to_catalog_sky(incat)
+    #convert distance to arcseconds
+    #d2d = d2d*3600
+
+    #print(idx,d2d)
+    
+    #select close matches, where I assume septol is in pixels, just like the input catalog
+    iclose = np.where(d2d < septol * u.deg)
+    #convert tuple to pure array
+    iclose=iclose[0]
+
+    #print(d2d[indx])
+    #print(np.column_stack((raref[iclose],rain[idx[iclose]],d2d[iclose]/u.deg*3600.)))
+
+
+    #write files only if "matchfile" keyword is set
+    keys = sorted(kwargs.keys())
+    for kw in keys:
+        if kw == 'matchfile':
+            #print(kwargs[kw])
+            #open file for writing and write a header
+            fo = open(kwargs[kw], "w")
+            fo.write("# raref decref rain decin\n")
+            for i,val in enumerate(iclose):
+                #print(i,iclose[i])
+                #print(raref[iclose[i]],decref[iclose[i]],rain[idx[iclose[i]]],decin[idx[iclose[i]]])
+                fo.write('{} {} {} {}\n'.format(raref[iclose[i]],decref[iclose[i]],rain[idx[iclose[i]]],decin[idx[iclose[i]]]))
+            fo.close()
+
+    #store the limits of the coordinates
+    lims = {'ramax' : np.amax(raref[iclose]), 'ramin' : np.amin(raref[iclose]), 'decmax' : np.amax(decref[iclose]), 'decmin' : np.amin(decref[iclose])}
+    
+    #return all matches within the tolerance
+    return raref[iclose], decref[iclose], rain[idx[iclose]], decin[idx[iclose]], lims
+
+
+
+def match_diff_sky_plot(rarefm, decrefm, rainm, decinm, **kwargs):
+
+    '''PURPOSE: Plot panels of differences in ra and dec for a set of
+    matched catalogs.
+
+    INPUT PARAMETERS:
+
+    rarefm, decrefm, rainm, decinm: A set of coordinates for matched
+    objects.  These arrays must all be the same length.
+
+    OPTIONAL KEWORD PARAMETERS
+
+    plotfile: the name of the file containing the plot
+
+    ramin, ramax, decmin, decmax.  These are the limits over which the
+    transform was originally computed.  If these are given then it
+    uses those limits to color the points in the ra and decdiff plots.
+    If one is given, all must be given.
+
+    OUTPUT:
+
+    a plot of the differences between the RA and DEC coordinates
+
+    '''
+
+    #set LaTeX fonts for labels
+    rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
+    rc('text', usetex=True)
+
+    
+    lims = {'ramax' : np.amax(rarefm), 'ramin' : np.amin(rarefm), 'decmax' : np.amax(decrefm), 'decmin' : np.amin(decrefm)}
+    print("plotlims are ",lims)
+
+    padfac = 0.001
+    radiff = (rarefm - rainm)*3600.
+    decdiff = (decrefm - decinm)*3600.
+    #f, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, sharex='col', sharey='row')
+    ralims = [lims['ramin'] * (1. - padfac), lims['ramax'] * (1. + padfac)]
+
+    #handles how to do padding if DECs are positive or negative
+    if lims['decmin'] < 0:
+        declims = [lims['decmin'] * (1. + padfac/10.), lims['decmax'] * (1. - padfac/10.)]
+    else:
+        declims = [lims['decmin'] * (1. - padfac/10.), lims['decmax'] * (1. + padfac/10.)]
+    yline = [0,0]
+    yline1 = [-0.5, -0.5]
+    yline2 = [0.5, 0.5]
+
+    #finds source outside of ra and dec lims.  Assumes that if one
+    #keyword is given that all are given
+    if 'ramin' in kwargs.keys():
+        iin = np.where((rarefm >= kwargs['ramin']) & (rarefm <= kwargs['ramax']) & \
+                       (decrefm >= kwargs['decmin']) & (decrefm <= kwargs['decmax']))
+        iout = np.where(((rarefm < kwargs['ramin']) | (rarefm > kwargs['ramax'])) | \
+                        ((decrefm < kwargs['decmin']) | (decrefm > kwargs['decmax'])))
+    
+    plt.clf()
+    f, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2)
+
+    #color code the points in and outside the area where transform is
+    #valid, if the ra and dec limits are given.
+    if 'ramin' in kwargs.keys():
+        ax1.scatter(rarefm[iout], radiff[iout], color='y', edgecolors='k')
+        ax1.scatter(rarefm[iin], radiff[iin], color='b', edgecolors='k')
+        medradiff = np.median(radiff[iin])
+    else:
+        ax1.scatter(rarefm, radiff, color='b', edgecolors='k')
+        medradiff = np.median(radiff)
+
+    ax1.text(1.002 * ralims[0], 2.5, medradiff, color='r')
+    ax1.plot(ralims, yline, color='r')
+    ax1.plot(ralims, yline1, color='r', linestyle = ':')
+    ax1.plot(ralims, yline2, color='r', linestyle = ':')
+    ax1.set_xlim(ralims)
+    ax1.set_ylim([-3.,3.])
+    ax1.set_ylabel(r'\Delta RA')
+
+    #color code the points in and outside the area where transform is
+    #valid, if the ra and dec limits are given.
+    if 'ramin' in kwargs.keys():
+        ax2.scatter(decrefm[iout], radiff[iout], color='y', edgecolors='k')
+        ax2.scatter(decrefm[iin], radiff[iin], color='b', edgecolors='k')
+    else:
+        ax2.scatter(decrefm, radiff, color='b', edgecolors='k')
+
+    #ax2.scatter(decrefm, radiff)
+    ax2.plot(declims, yline, color='r')
+    ax2.plot(declims, yline1, color='r', linestyle = ':')
+    ax2.plot(declims, yline2, color='r', linestyle = ':')
+    #ax2.set_xticks(np.arange(min(decrefm), max(decrefm)+0.04, 0.04))
+    ax2.xaxis.set_major_formatter(FormatStrFormatter('%.3f'))
+    ax2.set_xlim(declims)
+    ax2.set_ylim([-3.,3.])
+
+    #color code the points in and outside the area where transform is
+    #valid, if the ra and dec limits are given.
+    if 'ramin' in kwargs.keys():
+        ax3.scatter(rarefm[iout], decdiff[iout], color='y', edgecolors='k')
+        ax3.scatter(rarefm[iin], decdiff[iin], color='b', edgecolors='k')
+        meddecdiff = np.median(decdiff[iin])
+    else:
+        ax3.scatter(rarefm, decdiff, color='b', edgecolors='k')
+        meddecdiff = np.median(decdiff)
+
+    ax3.text(1.002 * ralims[0], 2.5, meddecdiff, color='r')
+    #ax3.scatter(rarefm, decdiff)
+    ax3.plot(ralims, yline, color='r')
+    ax3.plot(ralims, yline1, color='r', linestyle = ':')
+    ax3.plot(ralims, yline2, color='r', linestyle = ':')
+    ax3.set_xlim(ralims)
+    ax3.set_ylim([-3.,3.])
+    ax3.set_xlabel(r'RA')
+    ax3.set_ylabel(r'\Delta Dec')
+    
+    #color code the points in and outside the area where transform is
+    #valid, if the ra and dec limits are given.
+    if 'ramin' in kwargs.keys():
+        ax4.scatter(decrefm[iout], decdiff[iout], color='y', edgecolors='k')
+        ax4.scatter(decrefm[iin], decdiff[iin], color='b', edgecolors='k')
+    else:
+        ax4.scatter(decrefm, decdiff, color='b', edgecolors='k')
+
+    #    ax4.scatter(decrefm, decdiff)
+    ax4.plot(declims, yline, color='r')
+    ax4.plot(declims, yline1, color='r', linestyle = ':')
+    ax4.plot(declims, yline2, color='r', linestyle = ':')
+    #ax4.set_xticks(np.arange(min(decrefm), max(decrefm)+0.04, 0.04))
+    ax4.xaxis.set_major_formatter(FormatStrFormatter('%.3f'))
+    ax4.set_xlim(declims)
+    ax4.set_ylim([-3.,3.])
+    ax4.set_xlabel(r'Dec')
+
+    keys = sorted(kwargs.keys())
+    for kw in keys:
+        if kw == 'plotfile':
+            plt.savefig(kwargs[kw])
+    #plt.show()
+    #print("done with plot")
+    #plt.close()
+    
