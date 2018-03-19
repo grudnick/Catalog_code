@@ -1,10 +1,12 @@
 import numpy as np
 from astropy import units as u
+from astropy.io import ascii
 from astropy.coordinates import SkyCoord
 import matplotlib.pyplot as plt
 from matplotlib import rc
 from matplotlib.ticker import FormatStrFormatter
 from pyraf import iraf 
+import os
    
 
 def cat_im_match(xref, yref, xin, yin, septol, **kwargs):
@@ -31,8 +33,11 @@ def cat_im_match(xref, yref, xin, yin, septol, **kwargs):
 
     OPTIONAL KEYWORD PARAMETERS
 
+    icfile: The filename with the input reference coordinates
+    for xyxymatch.  These need to be created by hand from the images
+
     matchfile: a name of the file that will contain the reference and
-    input coordinates.  Suitable for geomap input.
+    input coordinates.  Suitable for geomap input.  Default is 'xyxy_out.txt'
 
     OUTPUT
 
@@ -41,30 +46,70 @@ def cat_im_match(xref, yref, xin, yin, septol, **kwargs):
 
     '''
 
-    #loop through all coordiantes and find closest match.  This is an
-    #N^2 process.  I can make it faster later.
-    #initialize distance coordinate
-    dist = np.full(xref.size, 1.e6)
-    #initialize array with indices of closest match
-    imatch = np.zeros(xref.size, dtype=np.int8)
-    for iref,valref in enumerate(xref):
-        for iin,valin in enumerate(xin):
-            #print("hi",iref,iin,xref[iref],xin[iin],yref[iref],yin[iin])
-            disttest = np.sqrt( (xref[iref] - xin[iin])**2 +(yref[iref] - yin[iin])**2)
+    # #loop through all coordiantes and find closest match.  This is an
+    # #N^2 process.  I can make it faster later.
+    # #initialize distance coordinate
+    # dist = np.full(xref.size, 1.e6)
+    # #initialize array with indices of closest match
+    # imatch = np.zeros(xref.size, dtype=np.int8)
+    # for iref,valref in enumerate(xref):
+    #     for iin,valin in enumerate(xin):
+    #         #print("hi",iref,iin,xref[iref],xin[iin],yref[iref],yin[iin])
+    #         disttest = np.sqrt( (xref[iref] - xin[iin])**2 +(yref[iref] - yin[iin])**2)
 
-            #find the closest reference point to each input point
-            if disttest < dist[iref]:
-                #print(disttest,iref,iin)
-                dist[iref] = disttest
-                imatch[iref] = iin
+    #         #find the closest reference point to each input point
+    #         if disttest < dist[iref]:
+    #             #print(disttest,iref,iin)
+    #             dist[iref] = disttest
+    #             imatch[iref] = iin
 
             
-    #select close matches, where I assume septol is in pixels, just like the input catalog
-    iclose = np.where(dist < septol)
-    #convert tuple to pure array
-    iclose=iclose[0]
+    # #select close matches, where I assume septol is in pixels, just like the input catalog
+    # iclose = np.where(dist < septol)
+    # #convert tuple to pure array
+    # iclose=iclose[0]
 
+    #generate input files for xyxymatch from reference coordinates
+    xyxy_refin = 'xyxymatch_refcoords.txt'
+    fo = open(xyxy_refin, "w")
+    for i,val in enumerate(xref):
+        #print(i,iclose[i])
+        #print(raref[iclose[i]],decref[iclose[i]],rain[idx[iclose[i]]],decin[idx[iclose[i]]])
+        fo.write('{} {}\n'.format(xref[i],yref[i]))
+    fo.close()
+
+    xyxy_inin = 'xyxymatch_incoords.txt'
+    fo = open(xyxy_inin, "w")
+    for i,val in enumerate(xin):
+        fo.write('{} {}\n'.format(xin[i],yin[i]))
+    fo.close()
+
+    #set xyxymatch output name if keyword is given
+    xyxy_out = 'xyxy_match.txt'
+    #remove geotran output file if it already exists
+    if os.path.isfile(xyxy_out) is True:
+        cmdstr = 'rm ' + xyxy_out
+        os.system(cmdstr)
+
+        
+    #run xyxymatch and include a set of reference points if given as input
+    if 'icfile' in kwargs.keys():
+        iraf.xyxymatch(xyxy_inin, xyxy_refin, xyxy_out, septol, refpoints=kwargs['icfile'], \
+                       xcolumn=1,ycolumn=2,xrcolumn=1,yrcolumn=2,matching="tolerance")
+    else: 
+        iraf.xyxymatch(xyxy_inin, xyxy_refin, xyxy_out, septol, refpoints="", \
+                       xcolumn=1,ycolumn=2,xrcolumn=1,yrcolumn=2,matching="tolerance")
+
+    #read in xyxymatch output to get coordinate limits and to return
+    #ordered matched coordinates
+    xyxy_cat = ascii.read(xyxy_out)
+    xref_m = np.array(xyxy_cat['col1'])
+    yref_m = np.array(xyxy_cat['col2'])
+    xin_m = np.array(xyxy_cat['col3'])
+    yin_m = np.array(xyxy_cat['col4'])
+    
     #write files only if "matchfile" keyword is set
+    #this reformat of the xyxymatch code is just so that my other routines work
     keys = sorted(kwargs.keys())
     for kw in keys:
         if kw == 'matchfile':
@@ -72,17 +117,17 @@ def cat_im_match(xref, yref, xin, yin, septol, **kwargs):
             #open file for writing and write a header
             fo = open(kwargs[kw], "w")
             fo.write("# xref yref xin yin\n")
-            for i,val in enumerate(iclose):
+            for i,val in enumerate(xref_m):
                 #print(i,iclose[i])
                 #print(raref[iclose[i]],decref[iclose[i]],rain[idx[iclose[i]]],decin[idx[iclose[i]]])
-                fo.write('{} {} {} {}\n'.format(xref[iclose[i]],yref[iclose[i]],xin[imatch[iclose[i]]],yin[imatch[iclose[i]]]))
+                fo.write('{} {} {} {}\n'.format(xref_m[i],yref_m[i],xin_m[i],yin_m[i]))
             fo.close()
 
     #store the limits of the coordinates
-    lims = {'xmax' : np.amax(xref[iclose]), 'xmin' : np.amin(xref[iclose]), 'ymax' : np.amax(yref[iclose]), 'ymin' : np.amin(yref[iclose])}
+    lims = {'xmax' : np.amax(xref_m), 'xmin' : np.amin(xref_m), 'ymax' : np.amax(yref_m), 'ymin' : np.amin(yref_m)}
     
     #return all matches within the tolerance
-    return xref[iclose], yref[iclose], xin[imatch[iclose]], yin[imatch[iclose]], lims
+    return xref_m, yref_m, xin_m, yin_m, lims
 
 
 
@@ -119,7 +164,7 @@ def match_diff_im_plot(xrefm, yrefm, xinm, yinm, **kwargs):
     lims = {'xmax' : np.amax(xrefm), 'xmin' : np.amin(xrefm), 'ymax' : np.amax(yrefm), 'ymin' : np.amin(yrefm)}
     print("plotlims are ",lims)
 
-    padfac = 30.0
+    padfac = 0.03
     xdiff = (xrefm - xinm)
     ydiff = (yrefm - yinm)
     #f, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, sharex='col', sharey='row')
@@ -150,12 +195,12 @@ def match_diff_im_plot(xrefm, yrefm, xinm, yinm, **kwargs):
     if 'xmin' in kwargs.keys():
         ax1.scatter(xrefm[iout], xdiff[iout], color='y', edgecolors='k')
         ax1.scatter(xrefm[iin], xdiff[iin], color='b', edgecolors='k')
-        medradiff = np.median(xdiff[iin])
+        medxdiff = np.median(xdiff[iin])
     else:
         ax1.scatter(xrefm, xdiff, color='b', edgecolors='k')
-        medradiff = np.median(xdiff)
+        medxdiff = np.median(xdiff)
 
-    ax1.text(1.002 * xlims[0], 2.5, medradiff, color='r')
+    ax1.text(1.002 * xlims[0], 2.5, medxdiff, color='r')
     ax1.plot(xlims, yline, color='r')
     ax1.plot(xlims, yline1, color='r', linestyle = ':')
     ax1.plot(xlims, yline2, color='r', linestyle = ':')
@@ -202,7 +247,7 @@ def match_diff_im_plot(xrefm, yrefm, xinm, yinm, **kwargs):
     
     #color code the points in and outside the area where transform is
     #valid, if the x and y limits are given.
-    if 'ramin' in kwargs.keys():
+    if 'xmin' in kwargs.keys():
         ax4.scatter(yrefm[iout], ydiff[iout], color='y', edgecolors='k')
         ax4.scatter(yrefm[iin], ydiff[iin], color='b', edgecolors='k')
     else:
