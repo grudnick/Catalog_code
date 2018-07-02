@@ -1,11 +1,9 @@
 import numpy as np
 from astropy import units as u
 from astropy.coordinates import SkyCoord
-import matplotlib.pyplot as plt
 from matplotlib import rc
 from matplotlib.ticker import FormatStrFormatter
-from pyraf import iraf 
-   
+  
 
 def cat_sky_match(raref, decref, rain, decin, septol, **kwargs):
 
@@ -74,6 +72,10 @@ def cat_sky_match(raref, decref, rain, decin, septol, **kwargs):
                 fo.write('{} {} {} {}\n'.format(raref[iclose[i]],decref[iclose[i]],rain[idx[iclose[i]]],decin[idx[iclose[i]]]))
             fo.close()
 
+    print("RA for matching pairs in spectro catalog")
+    print(raref[iclose])
+    print("DEC for matching pairs in spectro catalog")
+    print(decref[iclose])
     #store the limits of the coordinates
     lims = {'ramax' : np.amax(raref[iclose]), 'ramin' : np.amin(raref[iclose]), 'decmax' : np.amax(decref[iclose]), 'decmin' : np.amin(decref[iclose])}
     
@@ -83,6 +85,8 @@ def cat_sky_match(raref, decref, rain, decin, septol, **kwargs):
 
 
 def match_diff_sky_plot(rarefm, decrefm, rainm, decinm, **kwargs):
+
+    import matplotlib.pyplot as plt
 
     '''PURPOSE: Plot panels of differences in ra and dec for a set of
     matched catalogs.

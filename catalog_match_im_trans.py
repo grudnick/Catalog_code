@@ -2,7 +2,6 @@ import numpy as np
 from astropy import units as u
 from astropy.io import ascii
 from astropy.coordinates import SkyCoord
-import matplotlib.pyplot as plt
 from matplotlib import rc
 from matplotlib.ticker import FormatStrFormatter
 from pyraf import iraf 
@@ -133,6 +132,9 @@ def cat_im_match(xref, yref, xin, yin, septol, **kwargs):
 
 def match_diff_im_plot(xrefm, yrefm, xinm, yinm, **kwargs):
 
+    #put here because this has to be imported after georun is executed
+    #to prevent the code from crashing
+    import matplotlib.pyplot as plt
     '''PURPOSE: Plot panels of differences in x and y for a set of
     matched catalogs.
 
