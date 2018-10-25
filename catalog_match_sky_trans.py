@@ -123,7 +123,8 @@ def match_diff_sky_plot(rarefm, decrefm, rainm, decinm, **kwargs):
     radiff = (rarefm - rainm)*3600.
     decdiff = (decrefm - decinm)*3600.
     #f, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, sharex='col', sharey='row')
-    ralims = [lims['ramin'] * (1. - padfac), lims['ramax'] * (1. + padfac)]
+    ralims = [lims['ramin'] - 2./60., lims['ramax'] + 2./60.]
+    #ralims = [lims['ramin'] * (1. - padfac), lims['ramax'] * (1. + padfac)]
 
     #handles how to do padding if DECs are positive or negative
     if lims['decmin'] < 0:
