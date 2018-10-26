@@ -156,7 +156,9 @@ def match_diff_sky_plot(rarefm, decrefm, rainm, decinm, **kwargs):
         ax1.scatter(rarefm, radiff, color='b', edgecolors='k')
         medradiff = np.median(radiff)
 
-    ax1.text(1.002 * ralims[0], 2.5, medradiff, color='r')
+        #print(1.002 * ralims[0],medradiff)    
+    #ax1.text(1.002 * ralims[0], 2.5, medradiff, color='r')
+    ax1.text(np.median(rarefm) - 2./60., 2.5, medradiff, color='r')
     ax1.plot(ralims, yline, color='r')
     ax1.plot(ralims, yline1, color='r', linestyle = ':')
     ax1.plot(ralims, yline2, color='r', linestyle = ':')
@@ -191,8 +193,10 @@ def match_diff_sky_plot(rarefm, decrefm, rainm, decinm, **kwargs):
         ax3.scatter(rarefm, decdiff, color='b', edgecolors='k')
         meddecdiff = np.median(decdiff)
 
-    ax3.text(1.002 * ralims[0], 2.5, meddecdiff, color='r')
-    #ax3.scatter(rarefm, decdiff)
+    #ax3.text(1.002 * ralims[0], 2.5, meddecdiff, color='r')
+    ax3.text(np.median(rarefm) - 2./60., 2.5, meddecdiff, color='r')
+
+#ax3.scatter(rarefm, decdiff)
     ax3.plot(ralims, yline, color='r')
     ax3.plot(ralims, yline1, color='r', linestyle = ':')
     ax3.plot(ralims, yline2, color='r', linestyle = ':')
