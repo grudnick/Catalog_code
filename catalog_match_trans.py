@@ -146,9 +146,12 @@ def match_diff_plot(rarefm, decrefm, rainm, decinm, **kwargs):
     if 'ramin' in kwargs.keys():
         ax1.scatter(rarefm[iout], radiff[iout], color='y', edgecolors='k')
         ax1.scatter(rarefm[iin], radiff[iin], color='b', edgecolors='k')
+        medradiff = np.median(radiff[iin])
     else:
         ax1.scatter(rarefm, radiff, color='b', edgecolors='k')
-        
+        medradiff = np.median(radiff)
+
+    ax1.text(1.002 * ralims[0], 2.5, medradiff, color='r')
     ax1.plot(ralims, yline, color='r')
     ax1.plot(ralims, yline1, color='r', linestyle = ':')
     ax1.plot(ralims, yline2, color='r', linestyle = ':')
@@ -178,9 +181,12 @@ def match_diff_plot(rarefm, decrefm, rainm, decinm, **kwargs):
     if 'ramin' in kwargs.keys():
         ax3.scatter(rarefm[iout], decdiff[iout], color='y', edgecolors='k')
         ax3.scatter(rarefm[iin], decdiff[iin], color='b', edgecolors='k')
+        meddecdiff = np.median(decdiff[iin])
     else:
         ax3.scatter(rarefm, decdiff, color='b', edgecolors='k')
+        meddecdiff = np.median(decdiff)
 
+    ax3.text(1.002 * ralims[0], 2.5, meddecdiff, color='r')
     #ax3.scatter(rarefm, decdiff)
     ax3.plot(ralims, yline, color='r')
     ax3.plot(ralims, yline1, color='r', linestyle = ':')
