@@ -86,7 +86,7 @@ def cat_sky_match(raref, decref, rain, decin, septol, **kwargs):
 
 
 
-def match_diff_sky_plot(rarefm, decrefm, rainm, decinm, **kwargs):
+def match_diff_sky_plot(rarefm, decrefm, rainm, decinm, detrend = False, **kwargs):
 
     import matplotlib.pyplot as plt
 
@@ -106,6 +106,9 @@ def match_diff_sky_plot(rarefm, decrefm, rainm, decinm, **kwargs):
     transform was originally computed.  If these are given then it
     uses those limits to color the points in the ra and decdiff plots.
     If one is given, all must be given.
+
+    detrend: Default - False.  If True, subtract the best fit line
+    from the data and recompute statistics
 
     OUTPUT:
 
@@ -207,6 +210,18 @@ def match_diff_sky_plot(rarefm, decrefm, rainm, decinm, **kwargs):
     ax1.set_ylim([ypmin,ypmax])
     ax1.set_ylabel(r'\Delta RA')
 
+    #detrend data if keyword is set
+    if detrend:
+        radiffcor = radiff - (rarefm * slope + yint)
+        ax1.scatter(rarefm[ifit],radiffcor[ifit], color='',edgecolor='m')
+        medradiffcor = np.median(radiffcor[ifit])
+        sigradiffcor = 1.4826 * mad(radiffcor)
+        ax1.text(np.median(rarefm) - 3./60., 0.7*ypmin,
+                r'median($\Delta_{cor} RA$) = ' + str(round(medradiffcor,2)), color='m',fontsize=labsize)
+        ax1.text(np.median(rarefm) - 3./60., 0.85*ypmin,
+                r'$\sigma(\Delta_{cor} RA$) = ' + str(round(sigradiffcor,2)), color='m',fontsize=labsize)
+
+       #rarefm, radiff
 
     #color code the points in and outside the area where transform is
     #valid, if the ra and dec limits are given.
@@ -249,6 +264,18 @@ def match_diff_sky_plot(rarefm, decrefm, rainm, decinm, **kwargs):
     ax2.set_xlim(declims)
     ax2.set_ylim([ypmin,ypmax])
 
+
+    #detrend data if keyword is set
+    if detrend:
+        radiffcor = radiff - (decrefm * slope + yint)
+        ax2.scatter(decrefm[ifit],radiffcor[ifit], color='',edgecolor='m')
+        medradiffcor = np.median(radiffcor[ifit])
+        sigradiffcor = 1.4826 * mad(radiffcor)
+        ax2.text(np.median(decrefm) - 3./60., 0.7*ypmin,
+                r'median($\Delta_{cor} RA$) = ' + str(round(medradiffcor,2)), color='m',fontsize=labsize)
+        ax2.text(np.median(decrefm) - 3./60., 0.85*ypmin,
+                r'$\sigma(\Delta_{cor} RA$) = ' + str(round(sigradiffcor,2)), color='m',fontsize=labsize)
+
     #color code the points in and outside the area where transform is
     #valid, if the ra and dec limits are given.
     if 'ramin' in kwargs.keys():
@@ -281,9 +308,9 @@ def match_diff_sky_plot(rarefm, decrefm, rainm, decinm, **kwargs):
 
 
     #ax3.text(1.002 * ralims[0], 2.5, meddecdiff, color='r')
-    ax3.text(np.median(rarefm) - 2./60., 0.85*ypmax,
+    ax3.text(np.median(rarefm) - 3./60., 0.85*ypmax,
                  r'median($\Delta Dec$) = ' + str(round(meddecdiff,2)), color='r',fontsize=labsize)
-    ax3.text(np.median(rarefm) - 2./60., 0.7*ypmax,
+    ax3.text(np.median(rarefm) - 3./60., 0.7*ypmax,
                  r'$\sigma(\Delta Dec$) = ' + str(round(sigdecdiff,2)), color='r',fontsize=labsize)
 
     #plot line fit
@@ -296,7 +323,7 @@ def match_diff_sky_plot(rarefm, decrefm, rainm, decinm, **kwargs):
 
     #compute change in delta DEC over range in RA
     ax3.text(np.median(rarefm) - 3./60., 0.55*ypmax,
-                 r'$\Delta_{tot} RA$ = ' + str(round((max(rarefm) - min(rarefm)) * slope,2)), color='r',fontsize=labsize)
+                 r'$\Delta_{tot} Dec$ = ' + str(round((max(rarefm) - min(rarefm)) * slope,2)), color='r',fontsize=labsize)
     #ax3.scatter(rarefm, decdiff)
     ax3.plot(ralims, yline, color='r')
     ax3.plot(ralims, yline1, color='r', linestyle = ':')
@@ -306,6 +333,16 @@ def match_diff_sky_plot(rarefm, decrefm, rainm, decinm, **kwargs):
     ax3.set_xlabel(r'RA')
     ax3.set_ylabel(r'\Delta Dec')
     
+    if detrend:
+        decdiffcor = decdiff - (rarefm * slope + yint)
+        ax3.scatter(rarefm[ifit],decdiffcor[ifit], color='',edgecolor='m')
+        meddecdiffcor = np.median(decdiffcor[ifit])
+        sigdecdiffcor = 1.4826 * mad(decdiffcor)
+        ax3.text(np.median(rarefm) - 3./60., 0.7*ypmin,
+                r'median($\Delta_{cor} Dec$) = ' + str(round(meddecdiffcor,2)), color='m',fontsize=labsize)
+        ax3.text(np.median(rarefm) - 3./60., 0.85*ypmin,
+                r'$\sigma(\Delta_{cor} Dec$) = ' + str(round(sigdecdiffcor,2)), color='m',fontsize=labsize)
+
     #color code the points in and outside the area where transform is
     #valid, if the ra and dec limits are given.
     if 'ramin' in kwargs.keys():
@@ -350,6 +387,16 @@ def match_diff_sky_plot(rarefm, decrefm, rainm, decinm, **kwargs):
     ax4.set_xlim(declims)
     ax4.set_ylim([ypmin,ypmax])
     ax4.set_xlabel(r'Dec')
+
+    if detrend:
+        decdiffcor = decdiff - (decrefm * slope + yint)
+        ax4.scatter(decrefm[ifit],decdiffcor[ifit], color='',edgecolor='m')
+        meddecdiffcor = np.median(decdiffcor[ifit])
+        sigdecdiffcor = 1.4826 * mad(decdiffcor)
+        ax4.text(np.median(decrefm) - 3./60., 0.7*ypmin,
+                r'median($\Delta_{cor} Dec$) = ' + str(round(meddecdiffcor,2)), color='m',fontsize=labsize)
+        ax4.text(np.median(decrefm) - 3./60., 0.85*ypmin,
+                r'$\sigma(\Delta_{cor} Dec$) = ' + str(round(sigdecdiffcor,2)), color='m',fontsize=labsize)
 
     keys = sorted(kwargs.keys())
     for kw in keys:
